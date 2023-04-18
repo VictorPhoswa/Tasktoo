@@ -15,34 +15,53 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 import java.util.Scanner;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-
 
 public class App {
 
     public static void main(String[] args) {
 
-        String filePath = "../app/files/data.xml";
+        //Creating a scanner object
+        Scanner sc =  new Scanner(System.in);
+        System.out.println("Enter the field names (comma-separated):");
 
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
+        // Input file and selected fields
+        File inputFile = new File("../app/files/data.xml");
+        List<String> selectedFields = new ArrayList<>();
+        String fieldNamesInput = sc.nextLine();
+        selectedFields.add(fieldNamesInput);
+        
 
-            // Read each line in the file
-            while ((line = br.readLine()) != null) {
-                // Split the line by comma
-                String[] fields = line.split(",");
+        // Create a SAX parser factory and configure it
+        SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+        saxParserFactory.setValidating(false);
+        saxParserFactory.setNamespaceAware(false);
 
-                // Print the field values
-                for (String field : fields) {
-                    System.out.print(field.trim() + " ");
+        try {
+            // Create a SAX parser and define a handler for parsing events
+            SAXParser saxParser = saxParserFactory.newSAXParser();
+            DefaultHandler handler = new DefaultHandler() {
+                boolean inSelectedField = false;
+
+                public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+                    // Check if the element is one of the selected fields
+                    if (selectedFields.contains(qName)) {
+                        inSelectedField = true;
+                    }
                 }
-                System.out.println();
-            }
 
-        } catch (IOException e) {
-            System.err.format("IOException: %s%n", e);
+                public void characters(char ch[], int start, int length) throws SAXException {
+                    // Output the element value if it is one of the selected fields
+                    if (inSelectedField) {
+                        System.out.println(new String(ch, start, length));
+                        inSelectedField = false;
+                    }
+                }
+            };
+
+            // Parse the XML file and trigger the handler for parsing events
+            saxParser.parse(inputFile, handler);
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            e.printStackTrace();
         }
     }
 }
